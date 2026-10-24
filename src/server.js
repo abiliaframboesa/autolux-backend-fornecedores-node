@@ -122,6 +122,121 @@ app.get('/encomendas/:id', async (req, res) => {
 });
 
 
+//fase 2
+// Criar uma nova encomenda a fornecedor
+app.post('/encomendas', async (req, res) => {
+    const connection = await pool.getConnection();
+
+    try {
+        const { fornecedor_id, pecas } = req.body;
+
+        // Validar fornecedor_id
+        if (!Number.isInteger(fornecedor_id) || fornecedor_id <= 0) {
+            return res.status(400).json({
+                erro: 'O fornecedor_id deve ser um número inteiro positivo.'
+            });
+        }
+
+        // Validar lista de peças
+        if (!Array.isArray(pecas) || pecas.length === 0) {
+            return res.status(400).json({
+                erro: 'A encomenda deve conter pelo menos uma peça.'
+            });
+        }
+
+        // Validar cada peça
+        for (const peca of pecas) {
+            if (
+                typeof peca.referencia_peca !== 'string' ||
+                peca.referencia_peca.trim() === '' ||
+                typeof peca.nome_peca !== 'string' ||
+                peca.nome_peca.trim() === '' ||
+                !Number.isInteger(peca.quantidade) ||
+                peca.quantidade <= 0 ||
+                typeof peca.preco_unitario !== 'number' ||
+                peca.preco_unitario < 0
+            ) {
+                return res.status(400).json({
+                    erro: 'Os dados de cada peça são inválidos.'
+                });
+            }
+        }
+
+        // Confirmar que o fornecedor existe
+        const [fornecedores] = await connection.query(
+            'SELECT id, nome FROM fornecedores WHERE id = ? AND ativo = 1',
+            [fornecedor_id]
+        );
+
+        if (fornecedores.length === 0) {
+            return res.status(404).json({
+                erro: 'Fornecedor não encontrado ou está inativo.'
+            });
+        }
+
+        // Calcular o total da encomenda
+        const total = pecas.reduce(
+            (soma, peca) =>
+                soma + (peca.quantidade * peca.preco_unitario),
+            0
+        );
+
+        // Iniciar transação
+        await connection.beginTransaction();
+
+        // Criar a encomenda
+        const [resultadoEncomenda] = await connection.query(
+            `INSERT INTO encomendas_fornecedor
+                (fornecedor_id, estado, total)
+             VALUES (?, 'Pendente', ?)`,
+            [fornecedor_id, total]
+        );
+
+        const encomendaId = resultadoEncomenda.insertId;
+
+        // Inserir as peças da encomenda
+        for (const peca of pecas) {
+            await connection.query(
+                `INSERT INTO encomenda_pecas
+                    (encomenda_id, referencia_peca, nome_peca, quantidade, preco_unitario)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    encomendaId,
+                    peca.referencia_peca.trim(),
+                    peca.nome_peca.trim(),
+                    peca.quantidade,
+                    peca.preco_unitario
+                ]
+            );
+        }
+
+        // Confirmar todas as alterações
+        await connection.commit();
+
+        res.status(201).json({
+            mensagem: 'Encomenda criada com sucesso!',
+            id: encomendaId,
+            fornecedor_id,
+            nome_fornecedor: fornecedores[0].nome,
+            estado: 'Pendente',
+            total: total.toFixed(2),
+            pecas
+        });
+
+    } catch (erro) {
+        await connection.rollback();
+
+        console.error('Erro ao criar encomenda:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível criar a encomenda.'
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+
 //fase 1
 // Consultar um fornecedor pelo ID
 app.get('/fornecedores/:id', async (req, res) => {
