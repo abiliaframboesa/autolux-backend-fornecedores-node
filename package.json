@@ -1,0 +1,30 @@
+{
+  "name": "autolux-fornecedores",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abiliaframboesa/autolux-backend-fornecedores-node.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/abiliaframboesa/autolux-backend-fornecedores-node/issues"
+  },
+  "homepage": "https://github.com/abiliaframboesa/autolux-backend-fornecedores-node#readme",
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
