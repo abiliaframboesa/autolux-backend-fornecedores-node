@@ -62,6 +62,65 @@ app.get('/encomendas', async (req, res) => {
     }
 });
 
+//fase 2
+
+// Consultar uma encomenda pelo ID, incluindo as respetivas peças
+app.get('/encomendas/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                erro: 'O ID deve ser um número inteiro positivo.'
+            });
+        }
+
+        const [encomendas] = await pool.query(
+            `SELECT
+                e.id,
+                e.fornecedor_id,
+                f.nome AS nome_fornecedor,
+                e.data_encomenda,
+                e.estado,
+                e.total
+             FROM encomendas_fornecedor e
+             INNER JOIN fornecedores f
+                ON e.fornecedor_id = f.id
+             WHERE e.id = ?`,
+            [id]
+        );
+
+        if (encomendas.length === 0) {
+            return res.status(404).json({
+                erro: 'Encomenda não encontrada.'
+            });
+        }
+
+        const [pecas] = await pool.query(
+            `SELECT
+                id,
+                referencia_peca,
+                nome_peca,
+                quantidade,
+                preco_unitario
+             FROM encomenda_pecas
+             WHERE encomenda_id = ?`,
+            [id]
+        );
+
+        res.json({
+            ...encomendas[0],
+            pecas
+        });
+    } catch (erro) {
+        console.error('Erro ao consultar encomenda:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível consultar a encomenda.'
+        });
+    }
+});
+
 
 //fase 1
 // Consultar um fornecedor pelo ID
