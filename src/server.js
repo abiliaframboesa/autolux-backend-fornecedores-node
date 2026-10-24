@@ -66,6 +66,45 @@ app.get('/fornecedores/:id', async (req, res) => {
     }
 });
 
+
+// Registar um novo fornecedor
+app.post('/fornecedores', async (req, res) => {
+    try {
+        const { nome, email, telefone } = req.body;
+
+        if (
+            typeof nome !== 'string' || !nome.trim() ||
+            typeof email !== 'string' || !email.trim() ||
+            typeof telefone !== 'string' || !telefone.trim()
+        ) {
+            return res.status(400).json({
+                erro: 'Nome, email e telefone são obrigatórios.'
+            });
+        }
+
+        const [resultado] = await pool.query(
+            'INSERT INTO fornecedores (nome, email, telefone, ativo) VALUES (?, ?, ?, ?)',
+            [nome.trim(), email.trim(), telefone.trim(), 1]
+        );
+
+        res.status(201).json({
+            mensagem: 'Fornecedor criado com sucesso!',
+            id: resultado.insertId,
+            nome: nome.trim(),
+            email: email.trim(),
+            telefone: telefone.trim(),
+            ativo: 1
+        });
+    } catch (erro) {
+        console.error('Erro ao criar fornecedor:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível criar o fornecedor.'
+        });
+    }
+});
+
+
 // Iniciar o servidor
 app.listen(PORT, () => {
     console.log(`API AutoLux disponível em http://localhost:${PORT}`);
