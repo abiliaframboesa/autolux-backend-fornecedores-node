@@ -164,6 +164,53 @@ app.put('/fornecedores/:id', async (req, res) => {
 });
 
 
+// Desativar um fornecedor
+app.patch('/fornecedores/:id/desativar', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                erro: 'O ID deve ser um número inteiro positivo.'
+            });
+        }
+
+        const [resultado] = await pool.query(
+            'UPDATE fornecedores SET ativo = 0 WHERE id = ? AND ativo = 1',
+            [id]
+        );
+
+        if (resultado.affectedRows === 0) {
+            const [fornecedores] = await pool.query(
+                'SELECT id, ativo FROM fornecedores WHERE id = ?',
+                [id]
+            );
+
+            if (fornecedores.length === 0) {
+                return res.status(404).json({
+                    erro: 'Fornecedor não encontrado.'
+                });
+            }
+
+            return res.status(409).json({
+                erro: 'O fornecedor já está desativado.'
+            });
+        }
+
+        res.json({
+            mensagem: 'Fornecedor desativado com sucesso!',
+            id,
+            ativo: 0
+        });
+    } catch (erro) {
+        console.error('Erro ao desativar fornecedor:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível desativar o fornecedor.'
+        });
+    }
+});
+
 
 // Iniciar o servidor
 app.listen(PORT, () => {
