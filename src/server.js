@@ -237,6 +237,67 @@ app.post('/encomendas', async (req, res) => {
 });
 
 
+//fase 2
+// Atualizar o estado de uma encomenda //
+app.put('/encomendas/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { estado } = req.body;
+
+        // Validar o ID
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                erro: 'O ID deve ser um número inteiro positivo.'
+            });
+        }
+
+        // Validar o estado
+        const estadosPermitidos = [
+            'Pendente',
+            'Enviada',
+            'Recebida'
+        ];
+
+        if (!estadosPermitidos.includes(estado)) {
+            return res.status(400).json({
+                erro: 'Estado inválido. Utiliza Pendente, Enviada ou Recebida.'
+            });
+        }
+
+        // Confirmar que a encomenda existe
+        const [encomendas] = await pool.query(
+            'SELECT id FROM encomendas_fornecedor WHERE id = ?',
+            [id]
+        );
+
+        if (encomendas.length === 0) {
+            return res.status(404).json({
+                erro: 'Encomenda não encontrada.'
+            });
+        }
+
+        // Atualizar o estado
+        await pool.query(
+            'UPDATE encomendas_fornecedor SET estado = ? WHERE id = ?',
+            [estado, id]
+        );
+
+        res.json({
+            mensagem: 'Estado da encomenda atualizado com sucesso!',
+            id,
+            estado
+        });
+
+    } catch (erro) {
+        console.error('Erro ao atualizar encomenda:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível atualizar a encomenda.'
+        });
+    }
+});
+
+
 //fase 1
 // Consultar um fornecedor pelo ID
 app.get('/fornecedores/:id', async (req, res) => {
