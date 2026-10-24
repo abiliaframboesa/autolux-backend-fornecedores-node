@@ -16,6 +16,7 @@ app.get('/', (req, res) => {
     });
 });
 
+//fase 1 - Trabalhar com fornecedores
 // Listar todos os fornecedores
 app.get('/fornecedores', async (req, res) => {
     try {
@@ -33,7 +34,36 @@ app.get('/fornecedores', async (req, res) => {
     }
 });
 
+//fase 2 - Trabalhar com encomendas
+// Listar todas as encomendas a fornecedores
+app.get('/encomendas', async (req, res) => {
+    try {
+        const [encomendas] = await pool.query(`
+            SELECT
+                e.id,
+                e.fornecedor_id,
+                f.nome AS nome_fornecedor,
+                e.data_encomenda,
+                e.estado,
+                e.total
+            FROM encomendas_fornecedor e
+            INNER JOIN fornecedores f
+                ON e.fornecedor_id = f.id
+            ORDER BY e.data_encomenda DESC
+        `);
 
+        res.json(encomendas);
+    } catch (erro) {
+        console.error('Erro ao consultar encomendas:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível consultar as encomendas.'
+        });
+    }
+});
+
+
+//fase 1
 // Consultar um fornecedor pelo ID
 app.get('/fornecedores/:id', async (req, res) => {
     try {
@@ -66,7 +96,7 @@ app.get('/fornecedores/:id', async (req, res) => {
     }
 });
 
-
+// fase 1
 // Registar um novo fornecedor
 app.post('/fornecedores', async (req, res) => {
     try {
@@ -104,7 +134,7 @@ app.post('/fornecedores', async (req, res) => {
     }
 });
 
-
+// fase 1
 // Atualizar um fornecedor
 app.put('/fornecedores/:id', async (req, res) => {
     try {
@@ -163,7 +193,7 @@ app.put('/fornecedores/:id', async (req, res) => {
     }
 });
 
-
+// fase 1
 // Desativar um fornecedor
 app.patch('/fornecedores/:id/desativar', async (req, res) => {
     try {
