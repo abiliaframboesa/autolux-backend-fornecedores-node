@@ -105,6 +105,66 @@ app.post('/fornecedores', async (req, res) => {
 });
 
 
+// Atualizar um fornecedor
+app.put('/fornecedores/:id', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { nome, email, telefone } = req.body;
+
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({
+                erro: 'O ID deve ser um número inteiro positivo.'
+            });
+        }
+
+        if (
+            typeof nome !== 'string' || !nome.trim() ||
+            typeof email !== 'string' || !email.trim() ||
+            typeof telefone !== 'string' || !telefone.trim()
+        ) {
+            return res.status(400).json({
+                erro: 'Nome, email e telefone são obrigatórios.'
+            });
+        }
+
+        const [resultado] = await pool.query(
+            `UPDATE fornecedores
+             SET nome = ?, email = ?, telefone = ?
+             WHERE id = ?`,
+            [nome.trim(), email.trim(), telefone.trim(), id]
+        );
+
+        if (resultado.affectedRows === 0) {
+            const [fornecedores] = await pool.query(
+                'SELECT id FROM fornecedores WHERE id = ?',
+                [id]
+            );
+
+            if (fornecedores.length === 0) {
+                return res.status(404).json({
+                    erro: 'Fornecedor não encontrado.'
+                });
+            }
+        }
+
+        res.json({
+            mensagem: 'Fornecedor atualizado com sucesso!',
+            id,
+            nome: nome.trim(),
+            email: email.trim(),
+            telefone: telefone.trim()
+        });
+    } catch (erro) {
+        console.error('Erro ao atualizar fornecedor:', erro.message);
+
+        res.status(500).json({
+            erro: 'Não foi possível atualizar o fornecedor.'
+        });
+    }
+});
+
+
+
 // Iniciar o servidor
 app.listen(PORT, () => {
     console.log(`API AutoLux disponível em http://localhost:${PORT}`);
